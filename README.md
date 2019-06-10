@@ -17,7 +17,7 @@ $> cordova plugin add https://github.com/masashiGMS/cordova-plugin-datagram.git
 ###example
 
 ```js
-var datagram = cordova.require("in.girish.datagram.datagram");
+var datagram = cordova.require("lordkbx.plugin.cordova.datagram.datagram");
 var socket = datagram.createSocket("udp4");
 var myPort = 3000;
 var targetPort = 3001;
