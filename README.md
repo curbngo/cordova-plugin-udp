@@ -1,6 +1,8 @@
 cordova-plugin-datagram
 =======================
 
+CLONE FROM [https://github.com/masashiGMS/cordova-plugin-datagram]
+
 Cordova plugin for sending datagram/UDP. Supports multicast UDP.
 
 
