@@ -1,4 +1,4 @@
-cordova-plugin-datagram
+cordova-plugin-datagram4
 =======================
 
 CLONE FROM [https://github.com/masashiGMS/cordova-plugin-datagram]
@@ -10,7 +10,9 @@ In order to improvement, masashiGMS modified some code from original.
 
 ###Install
 ```bash
-$> cordova plugin add https://github.com/masashiGMS/cordova-plugin-datagram.git
+$> cordova plugin add cordova-plugin-datagram4
+or
+$> cordova plugin add https://github.com/LordKBX/cordova-plugin-datagram4.git
 ```
 
 -----
