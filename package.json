@@ -1,4 +1,32 @@
 {
-    "name": "lordkbx.plugin.cordova.datagram",
-    "version": "1.0.0"
+  "name": "cordova-plugin-datagram4",
+  "version": "1.0.0",
+  "description": "cordova-plugin-datagram4",
+  "cordova": {
+    "id": "cordova-plugin-file-hash",
+    "platforms": [
+      "android",
+      "ios"
+    ]},
+  "main": "datagram.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LordKBX/cordova-plugin-file-hash.git"
+  },
+  "keywords": [
+    "cordova",
+	"cordova-plugin",
+	"cordova-plugin-datagram4",
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "LordKBX",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/LordKBX/cordova-plugin-file-hash/issues"
+  },
+  "homepage": "https://github.com/LordKBX/cordova-plugin-file-hash#readme"
 }
