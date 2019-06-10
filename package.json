@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-datagram4",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "cordova-plugin-datagram4",
   "cordova": {
     "id": "cordova-plugin-file-hash",
