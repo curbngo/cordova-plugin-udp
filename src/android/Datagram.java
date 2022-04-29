@@ -50,11 +50,12 @@ public class Datagram extends CordovaPlugin {
                     int port = packet.getPort();
 
                     Datagram.this.webView.sendJavascript(
-                        "cordova.require('cordova-plugin-datagram4.datagram')._onMessage("
+                        "cordova.require('cordova-plugin-udp.datagram')._onMessage("
                             + this.m_socketId + ","
-                            + "'" + msg + "',"
+                            + "`" + msg + "`,"
                             + "'" + address + "',"
                             + port + ")");
+                    Log.d(TAG, "RCVD: " + packet.getSocketAddress() + "  " + msg);
                 } catch (Exception e) {
                     Log.d(TAG, "Receive exception:" + e.toString());
                     return;
@@ -82,7 +83,7 @@ public class Datagram extends CordovaPlugin {
         } else if (action.equals("bind")) {
             final int port = data.getInt(1);
             try {
-                socket.bind(new InetSocketAddress(port));
+                socket.bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), port));
 
                 SocketListener listener = new SocketListener(id, socket);
                 m_listeners.put(id, listener);
