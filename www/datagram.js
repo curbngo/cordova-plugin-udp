@@ -62,6 +62,7 @@ function createSocket(type) {
 
 function onMessage(id, msg, remoteAddress, remotePort) {
     var socket = Socket.sockets[id];
+    msg = atob(msg);
     if (socket && 'message' in socket._eventHandlers) {
         socket._eventHandlers['message'].call(null, msg, { address: remoteAddress, port: remotePort });
     }

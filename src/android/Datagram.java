@@ -6,17 +6,26 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.util.Arrays;
+import java.util.Base64;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.util.SparseArray;
 
 public class Datagram extends CordovaPlugin {
 	private static final String TAG = Datagram.class.getSimpleName();
+    private static final int BUFFER_SIZE = 20480;
 
     SparseArray<DatagramSocket> m_sockets;
     SparseArray<SocketListener> m_listeners;
@@ -35,27 +44,27 @@ public class Datagram extends CordovaPlugin {
             this.m_socket = socket;
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
         public void run() {
-            byte[] data = new byte[20480]; // investigate MSG_PEEK and MSG_TRUNC in java
-            DatagramPacket packet = new DatagramPacket(data, data.length);
+            // investigate MSG_PEEK and MSG_TRUNC in java
+            DatagramPacket packet = new DatagramPacket(new byte[20480], BUFFER_SIZE);
+            Base64.Encoder encoder = Base64.getEncoder();
+            Charset charset = StandardCharsets.US_ASCII;
             while (true) {
                 try {
                     this.m_socket.receive(packet);
-                    String msg = new String(data, 0, packet.getLength());/*
-                                    .replace("'", "\'")
-                                    .replace("\r", "\\r")
-                                    .replace("\n", "\\n");
-                                    */
+                    byte[] data = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength() - 1);
+                    String base64Msg = encoder.encodeToString(data);
                     String address = packet.getAddress().getHostAddress();
                     int port = packet.getPort();
 
                     Datagram.this.webView.sendJavascript(
                         "cordova.require('cordova-plugin-udp.datagram')._onMessage("
                             + this.m_socketId + ","
-                            + "`" + msg + "`,"
+                            + "`" + base64Msg + "`,"
                             + "'" + address + "',"
                             + port + ")");
-                    Log.d(TAG, "RCVD: " + packet.getSocketAddress() + "  " + msg);
+                    Log.d(TAG, "RCVD: " + packet.getSocketAddress() + "  " + base64Msg);
                 } catch (Exception e) {
                     Log.d(TAG, "Receive exception:" + e.toString());
                     return;
