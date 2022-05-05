@@ -53,7 +53,7 @@ public class Datagram extends CordovaPlugin {
             while (true) {
                 try {
                     this.m_socket.receive(packet);
-                    byte[] data = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength() - 1);
+                    byte[] data = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength());
                     String base64Msg = encoder.encodeToString(data);
                     String address = packet.getAddress().getHostAddress();
                     int port = packet.getPort();
@@ -155,4 +155,3 @@ public class Datagram extends CordovaPlugin {
         return true;
     }
 }
-
