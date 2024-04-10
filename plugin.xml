@@ -3,7 +3,7 @@
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="cordova-plugin-udp"
-    version="1.0.1">
+    version="1.0.3">
     <name>UDP Plugin</name>
     <description>UDP Plugin which supports node.js dgram API</description>
     <license>MIT</license>
@@ -26,4 +26,3 @@
     </platform>
 
 </plugin>
-

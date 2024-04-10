@@ -19,7 +19,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import android.os.Build;
-import android.support.annotation.RequiresApi;
+import androidx.annotation.RequiresApi;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -73,13 +73,28 @@ public class Datagram extends CordovaPlugin {
         }
     }
 
+    private void closeAndRemove(int id) {
+        DatagramSocket socket = m_sockets.get(id);
+        if (socket != null) {
+            socket.close();
+            m_sockets.remove(id);
+            SocketListener listener = m_listeners.get(id);
+            if (listener != null) {
+                listener.interrupt();
+                m_listeners.remove(id);
+            }
+        }
+    }
+
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
         final int id = data.getInt(0);
         DatagramSocket socket = m_sockets.get(id);
 
         if (action.equals("create")) {
-            assert socket == null;
+            if (socket != null) {
+                this.closeAndRemove(id);
+            }
             final boolean isMulticast = data.getBoolean(1);
             try {
                 socket = isMulticast ? new MulticastSocket(null) : new DatagramSocket(null);
@@ -138,15 +153,7 @@ public class Datagram extends CordovaPlugin {
                 callbackContext.error("IOException: " + ioe.toString());
             }
         } else if (action.equals("close")) {
-            if (socket != null) {
-                socket.close();
-                m_sockets.remove(id);
-                SocketListener listener = m_listeners.get(id);
-                if (listener != null) {
-                    listener.interrupt();
-                    m_listeners.remove(id);
-                }
-            }
+            this.closeAndRemove(id);
             callbackContext.success();
         } else {
             return false; // 'MethodNotFound'

@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-udp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "cordova-plugin-udp",
   "cordova": {
     "id": "cordova-plugin-file-hash",
