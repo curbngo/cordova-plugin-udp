@@ -1,4 +1,4 @@
-var exec = cordova.require('cordova/exec');
+const exec = require('cordova/exec');
 
 // Events: 'message', 'error'
 function Socket(type) {
@@ -68,7 +68,14 @@ function onMessage(id, msg, remoteAddress, remotePort) {
     }
 }
 
-module.exports = {
+const Datagram = {
     createSocket: createSocket,
     _onMessage: onMessage
+};
+
+// Expose Datagram globally
+if (typeof window !== 'undefined') {
+    window.Datagram = Datagram;
 }
+
+module.exports = Datagram;

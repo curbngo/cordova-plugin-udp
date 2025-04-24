@@ -27,8 +27,9 @@ public class Datagram extends CordovaPlugin {
 	private static final String TAG = Datagram.class.getSimpleName();
     private static final int BUFFER_SIZE = 20480;
 
-    SparseArray<DatagramSocket> m_sockets;
-    SparseArray<SocketListener> m_listeners;
+    private SparseArray<DatagramSocket> m_sockets;
+    private SparseArray<SocketListener> m_listeners;
+    private boolean isDestroyed = false;
 
     public Datagram() {
         m_sockets = new SparseArray<DatagramSocket>();
@@ -38,6 +39,7 @@ public class Datagram extends CordovaPlugin {
     private class SocketListener extends Thread {
         int m_socketId;
         DatagramSocket m_socket;
+        volatile boolean isRunning = true;
 
         public SocketListener(int id, DatagramSocket socket) {
             this.m_socketId = id;
@@ -46,12 +48,16 @@ public class Datagram extends CordovaPlugin {
 
         @RequiresApi(api = Build.VERSION_CODES.O)
         public void run() {
-            // investigate MSG_PEEK and MSG_TRUNC in java
-            DatagramPacket packet = new DatagramPacket(new byte[20480], BUFFER_SIZE);
+            DatagramPacket packet = new DatagramPacket(new byte[BUFFER_SIZE], BUFFER_SIZE);
             Base64.Encoder encoder = Base64.getEncoder();
-            Charset charset = StandardCharsets.US_ASCII;
-            while (true) {
+            
+            while (isRunning && !isDestroyed) {
                 try {
+                    if (m_socket == null || m_socket.isClosed()) {
+                        Log.d(TAG, "Socket closed, stopping listener for socketId: " + m_socketId);
+                        return;
+                    }
+                    
                     this.m_socket.receive(packet);
                     byte[] data = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength());
                     String base64Msg = encoder.encodeToString(data);
@@ -66,28 +72,71 @@ public class Datagram extends CordovaPlugin {
                             + port + ")");
                     Log.d(TAG, "RCVD: " + packet.getSocketAddress() + "  " + base64Msg);
                 } catch (Exception e) {
-                    Log.d(TAG, "Receive exception:" + e.toString());
+                    if (isRunning && !isDestroyed) {
+                        Log.d(TAG, "Receive exception for socketId " + m_socketId + ": " + e.toString());
+                    }
                     return;
                 }
+            }
+        }
+
+        public void stopListening() {
+            isRunning = false;
+            if (m_socket != null && !m_socket.isClosed()) {
+                m_socket.close();
             }
         }
     }
 
     private void closeAndRemove(int id) {
+        SocketListener listener = m_listeners.get(id);
+        if (listener != null) {
+            listener.stopListening();
+            m_listeners.remove(id);
+        }
+
         DatagramSocket socket = m_sockets.get(id);
         if (socket != null) {
-            socket.close();
-            m_sockets.remove(id);
-            SocketListener listener = m_listeners.get(id);
-            if (listener != null) {
-                listener.interrupt();
-                m_listeners.remove(id);
+            try {
+                if (!socket.isClosed()) {
+                    socket.close();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error closing socket " + id + ": " + e.toString());
             }
+            m_sockets.remove(id);
         }
+    }
+
+    private void cleanupAllSockets() {
+        for (int i = 0; i < m_sockets.size(); i++) {
+            int key = m_sockets.keyAt(i);
+            closeAndRemove(key);
+        }
+        m_sockets.clear();
+        m_listeners.clear();
+    }
+
+    @Override
+    public void onDestroy() {
+        isDestroyed = true;
+        cleanupAllSockets();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onReset() {
+        cleanupAllSockets();
+        super.onReset();
     }
 
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
+        if (isDestroyed) {
+            callbackContext.error("Plugin is destroyed");
+            return true;
+        }
+
         final int id = data.getInt(0);
         DatagramSocket socket = m_sockets.get(id);
 
@@ -105,6 +154,18 @@ public class Datagram extends CordovaPlugin {
                 callbackContext.error(e.toString());
             }
         } else if (action.equals("bind")) {
+            if (socket == null) {
+                callbackContext.error("Socket not created");
+                return true;
+            }
+
+            // Check if there's already a listener for this socket
+            SocketListener existingListener = m_listeners.get(id);
+            if (existingListener != null) {
+                existingListener.stopListening();
+                m_listeners.remove(id);
+            }
+
             final int port = data.getInt(1);
             try {
                 socket.bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), port));
@@ -119,6 +180,10 @@ public class Datagram extends CordovaPlugin {
                 callbackContext.error(e.toString());
             }
         } else if (action.equals("joinGroup")) {
+            if (socket == null) {
+                callbackContext.error("Socket not created");
+                return true;
+            }
             final String address = data.getString(1);
             MulticastSocket msocket = (MulticastSocket) socket;
             try {
@@ -129,6 +194,10 @@ public class Datagram extends CordovaPlugin {
                 callbackContext.error(e.toString());
             }
         } else if (action.equals("leaveGroup")) {
+            if (socket == null) {
+                callbackContext.error("Socket not created");
+                return true;
+            }
             final String address = data.getString(1);
             MulticastSocket msocket = (MulticastSocket) socket;
             try {
@@ -139,6 +208,10 @@ public class Datagram extends CordovaPlugin {
                 callbackContext.error(e.toString());
             }
         } else if (action.equals("send")) {
+            if (socket == null) {
+                callbackContext.error("Socket not created");
+                return true;
+            }
             String message = data.getString(1);
             String address = data.getString(2);
             int port = data.getInt(3);
