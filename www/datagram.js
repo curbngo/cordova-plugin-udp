@@ -17,6 +17,10 @@ Socket.prototype.on = function (event, callback) {
     this._eventHandlers[event] = callback;
 };
 
+Socket.prototype.off = function (event) {
+    delete this._eventHandlers[event];
+};
+
 Socket.prototype.bind = function (port, callback) {
     callback = callback || function () { };
     exec(callback.bind(null, null), callback.bind(null), 'Datagram', 'bind', [ this._socketId, port ]);
@@ -62,15 +66,28 @@ function createSocket(type) {
 
 function onMessage(id, msg, remoteAddress, remotePort) {
     var socket = Socket.sockets[id];
+    if (!socket) {
+        return;
+    }
     msg = atob(msg);
-    if (socket && 'message' in socket._eventHandlers) {
+    if ('message' in socket._eventHandlers) {
         socket._eventHandlers['message'].call(null, msg, { address: remoteAddress, port: remotePort });
+    }
+}
+
+// Batch entry-point called by the native side: messages is a JS array of
+// {id, msg, addr, port} objects inlined as a JSON literal by sendJavascript().
+function onMessages(messages) {
+    for (var i = 0; i < messages.length; i++) {
+        var m = messages[i];
+        onMessage(m.id, m.msg, m.addr, m.port);
     }
 }
 
 const Datagram = {
     createSocket: createSocket,
-    _onMessage: onMessage
+    _onMessage: onMessage,
+    _onMessages: onMessages
 };
 
 // Expose Datagram globally
